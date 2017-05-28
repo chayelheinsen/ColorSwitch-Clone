@@ -14,9 +14,11 @@ class GameScene: SKScene {
   var player: Player? = nil
   var obstacles = [Obstacle]()
   let obstacleSpacing: CGFloat = 800
+  var scoreManager = ScoreManager()
   
   override func didMove(to view: SKView) {
     setupPlayerAndObstacles()
+    setupScore()
     
     // Make gravity stronger
     physicsWorld.gravity.dy = -22
@@ -45,7 +47,7 @@ class GameScene: SKScene {
     guard let player = player else { return }
     
     if player.position.y > obstacleSpacing * CGFloat(obstacles.count - 2) {
-      // TODO: Update score
+      scoreManager.increment()
       addObstacles(1)
     }
     
@@ -58,6 +60,10 @@ class GameScene: SKScene {
     if playerPositionInCamera.y < -size.height / 2 {
       dieAndRestart()
     }
+  }
+  
+  private func setupScore() {
+    cameraNode.addChild(scoreManager.label)
   }
   
   private func setupPlayerAndObstacles() {
@@ -114,6 +120,8 @@ class GameScene: SKScene {
   fileprivate func dieAndRestart() {
     player?.cancelVelocity()
     player?.removeFromParent()
+    
+    scoreManager.reset()
     
     for obstacle in obstacles {
       obstacle.stopRotating()
