@@ -18,15 +18,13 @@ extension Obstacle {
     return [SKColor.yellow, SKColor.red, SKColor.blue, SKColor.purple]
   }
   
-  func startRotating(clockwise: Bool) {
-    startRotating(clockwise: clockwise, duration: 8)
+  func startRotating() {
+    let clockwise = arc4random_uniform(2) == 1 ? true : false
+    let duration = TimeInterval(arc4random_uniform(5) + 2)
+    startRotating(clockwise: clockwise, duration: duration)
   }
   
-  func startRotating(duration: TimeInterval) {
-    startRotating(clockwise: false, duration: duration)
-  }
-  
-  func startRotating(clockwise: Bool = false, duration: TimeInterval = 8) {
+  func startRotating(clockwise: Bool, duration: TimeInterval) {
     var rotationFactor: CGFloat = 2 * .pi / 2
     
     if clockwise {

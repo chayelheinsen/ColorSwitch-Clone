@@ -104,7 +104,7 @@ class GameScene: SKScene {
     obstacle.create()
     obstacles.append(obstacle)
     obstacle.node.position = CGPoint(x: size.width / 2, y: obstacleSpacing * CGFloat(obstacles.count))
-    obstacle.startRotating(clockwise: false, duration: 2)
+    obstacle.startRotating()
     addChild(obstacle.node)
   }
   
@@ -113,7 +113,7 @@ class GameScene: SKScene {
     obstacle.create()
     obstacles.append(obstacle)
     obstacle.node.position = CGPoint(x: size.width / 2, y: obstacleSpacing * CGFloat(obstacles.count))
-    obstacle.startRotating(clockwise: false, duration: 2)
+    obstacle.startRotating()
     addChild(obstacle.node)
   }
   
