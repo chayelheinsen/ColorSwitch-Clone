@@ -47,9 +47,10 @@ class GameScene: SKScene {
   override func update(_ currentTime: TimeInterval) {
     guard let player = player else { return }
     
-    if player.position.y > obstacleSpacing * CGFloat(obstacles.count - 2) {
+    if player.position.y > obstacleSpacing * (obstacleOffestCounter - 2) {
       scoreManager.increment()
       addObstacles(1)
+      removeInvisibleObstacles()
     }
     
     let playerPositionInCamera = cameraNode.convert(player.position, from: self)
