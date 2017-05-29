@@ -13,12 +13,13 @@ class GameScene: SKScene {
   let cameraNode = SKCameraNode()
   var player: Player? = nil
   var obstacles = [Obstacle]()
+  var changers = [ColorChanger]()
   let obstacleSpacing: CGFloat = 800
+  var obstacleOffestCounter: CGFloat = 0
   var scoreManager = ScoreManager()
   
   override func didMove(to view: SKView) {
-    setupPlayerAndObstacles()
-    setupScore()
+    setupGame()
     
     // Make gravity stronger
     physicsWorld.gravity.dy = -22
@@ -58,31 +59,34 @@ class GameScene: SKScene {
     }
     
     if playerPositionInCamera.y < -size.height / 2 {
-      dieAndRestart()
+      restart()
     }
   }
   
-  private func setupScore() {
-    cameraNode.addChild(scoreManager.label)
-  }
-  
-  private func setupPlayerAndObstacles() {
+  private func setupGame() {
     addPlayer()
     addObstacles(3)
+    setupScore()
   }
   
   private func addPlayer() {
     player = Player(circleOfRadius: Player.recommenedRadius)
     player!.position = CGPoint(x: size.width / 2, y: 200)
-    player!.fillColor = .blue
-    player!.strokeColor = player!.fillColor
+    changePlayerColor()
     addChild(player!)
+  }
+  
+  private func setupScore() {
+    
+    if !cameraNode.contains(scoreManager.label) {
+      cameraNode.addChild(scoreManager.label)
+    }
   }
   
   /*
    Recursively creates obstacles.
    */
-  func addObstacles(_ count: Int) {
+  private func addObstacles(_ count: Int) {
     guard count > 0 else { return }
     
     let choice = Int(arc4random_uniform(2))
@@ -96,28 +100,84 @@ class GameScene: SKScene {
       print("something went wrong")
     }
     
+    addColorChanger()
+    
     addObstacles(count - 1)
   }
-
+  
   private func addCircleObstacle() {
     let obstacle = CircleObstacle()
-    obstacle.create()
-    obstacles.append(obstacle)
-    obstacle.node.position = CGPoint(x: size.width / 2, y: obstacleSpacing * CGFloat(obstacles.count))
-    obstacle.startRotating()
-    addChild(obstacle.node)
+    createObstacle(obstacle)
   }
   
   private func addSquareObstacle() {
     let obstacle = SquareObstacle()
+    createObstacle(obstacle)
+  }
+  
+  private func createObstacle(_ obstacle: Obstacle) {
     obstacle.create()
     obstacles.append(obstacle)
-    obstacle.node.position = CGPoint(x: size.width / 2, y: obstacleSpacing * CGFloat(obstacles.count))
+    obstacleOffestCounter += 1
+    obstacle.node.position = CGPoint(x: size.width / 2, y: obstacleSpacing * obstacleOffestCounter)
     obstacle.startRotating()
     addChild(obstacle.node)
   }
   
-  fileprivate func dieAndRestart() {
+  private func addColorChanger() {
+    guard let lastObstacleNode = obstacles.last?.node else { return }
+    
+    let colorChanger = ColorChanger(circleOfRadius: ColorChanger.recommenedRadius)
+    changers.append(colorChanger)
+    colorChanger.position = CGPoint(
+      x: size.width / 2,
+      y: obstacleSpacing / 2 + lastObstacleNode.position.y
+    )
+    addChild(colorChanger)
+  }
+  
+  fileprivate func changePlayerColor(_ colorChanger: ColorChanger? = nil) {
+    guard let player = player else { return }
+    
+    let choice = Int(arc4random_uniform(4))
+    let beforeColor = player.fillColor
+    var color: UIColor
+    
+    switch choice {
+    case 0:
+      color = .yellow
+    case 1:
+      color = .blue
+    case 2:
+      color = .red
+    case 3:
+      color = .purple
+    default:
+      color = .blue
+    }
+    
+    player.fillColor = color
+    player.strokeColor = color
+    
+    if let colorChanger = colorChanger {
+      colorChanger.removeFromParent()
+    }
+    
+    if color == beforeColor {
+      changePlayerColor()
+    }
+  }
+  
+  private func removeInvisibleObstacles() {
+    guard let obstacle = obstacles.first,
+      obstacles.count > 5 else { return }
+    
+    obstacle.stopRotating()
+    obstacle.node.removeFromParent()
+    obstacles.removeFirst()
+  }
+  
+  fileprivate func restart() {
     player?.cancelVelocity()
     player?.removeFromParent()
     
@@ -128,10 +188,17 @@ class GameScene: SKScene {
       obstacle.node.removeFromParent()
     }
     
+    for changer in changers {
+      changer.removeFromParent()
+    }
+    
     obstacles.removeAll()
+    changers.removeAll()
+    obstacleOffestCounter = 0
+    
     cameraNode.position = CGPoint(x: size.width / 2, y: size.height / 2)
     
-    setupPlayerAndObstacles()
+    setupGame()
   }
 }
 
@@ -139,10 +206,18 @@ extension GameScene: SKPhysicsContactDelegate {
   func didBegin(_ contact: SKPhysicsContact) {
     
     if let nodeA = contact.bodyA.node as? SKShapeNode,
-      let nodeB = contact.bodyB.node as? SKShapeNode {
+       let nodeB = contact.bodyB.node as? SKShapeNode {
       
-      if nodeA.fillColor != nodeB.fillColor {
-        dieAndRestart()
+      if contact.bodyA.categoryBitMask == PhysicsCategory.obstacle ||
+         contact.bodyB.categoryBitMask == PhysicsCategory.obstacle {
+        
+        if nodeA.fillColor != nodeB.fillColor {
+          restart()
+        }
+      } else if let nodeA = nodeA as? ColorChanger {
+        changePlayerColor(nodeA)
+      } else if let nodeB = nodeB as? ColorChanger {
+        changePlayerColor(nodeB)
       }
     }
   }
